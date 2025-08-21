@@ -58,6 +58,13 @@ struct Settings {
     /** @brief Connection information */
     ContactPoints connectionInfo = ContactPoints{};
 
+    /** @brief Direct access to connection info for convenience */
+    std::string host() const { return connectionInfo.host; }
+    uint16_t port() const { return connectionInfo.port; }
+    std::string database() const { return connectionInfo.database; }
+    std::string getUsername() const { return username.value_or(""); }
+    std::string getPassword() const { return password.value_or(""); }
+
     /** @brief The number of threads for the driver to pool */
     uint32_t threads = std::thread::hardware_concurrency();
 

@@ -35,6 +35,8 @@ struct Result;
 class Statement;
 class PreparedStatement;
 struct Batch;
+struct Future;
+class FutureWithCallback;
 }  // namespace impl
 
 using Settings = impl::Settings;
@@ -42,6 +44,8 @@ using Result = impl::Result;
 using Statement = impl::Statement;
 using PreparedStatement = impl::PreparedStatement;
 using Batch = impl::Batch;
+using Future = impl::Future;
+using FutureWithCallback = impl::FutureWithCallback;
 
 /**
  * @brief A strong type wrapper for int32_t

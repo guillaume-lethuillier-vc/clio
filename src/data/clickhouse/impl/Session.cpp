@@ -64,7 +64,7 @@ Result Session::parseResponse(const std::string& response) const {
     return result;
 }
 
-Result Session::query(const std::string& sql) const {
+Result Session::query(const std::string& sql, boost::asio::yield_context yield) const {
     if (!valid_) {
         lastError_ = "Session not valid";
         return Result{};
@@ -75,20 +75,13 @@ Result Session::query(const std::string& sql) const {
         builder.setTarget("/")
                .addData(buildRequestParams(sql, true));
         
-        // TODO(NODE-2688): implement actual async HTTP request using boost::asio::spawn
-        // auto response = builder.postPlain(yield);
-        // if (response) {
-        //     return parseResponse(*response);
-        // } else {
-        //     lastError_ = "HTTP request failed";
-        //     return Result{};
-        // }
-        
-        // placeholder...
-        Result result;
-        result.columnNames = {"query", "status"};
-        result.rows = {{sql, "executed"}};
-        return result;
+        auto response = builder.postPlain(yield);
+        if (response) {
+            return parseResponse(*response);
+        } else {
+            lastError_ = "HTTP request failed: " + response.error().message();
+            return Result{};
+        }
         
     } catch (const std::exception& e) {
         lastError_ = "Query failed: " + std::string(e.what());
@@ -96,7 +89,7 @@ Result Session::query(const std::string& sql) const {
     }
 }
 
-bool Session::execute(const std::string& sql) const {
+bool Session::execute(const std::string& sql, boost::asio::yield_context yield) const {
     if (!valid_) {
         lastError_ = "Session not valid";
         return false;
@@ -107,12 +100,8 @@ bool Session::execute(const std::string& sql) const {
         builder.setTarget("/")
                .addData(buildRequestParams(sql, false));
         
-        // TODO(NODE-2688): Implement actual async HTTP request using boost::asio::spawn
-        // auto response = builder.postPlain(yield);
-        // return response.has_value();
-        
-        // placeholder...
-        return true;
+        auto response = builder.postPlain(yield);
+        return response.has_value();
         
     } catch (const std::exception& e) {
         lastError_ = "Execute failed: " + std::string(e.what());

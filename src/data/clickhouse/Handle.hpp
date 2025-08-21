@@ -24,6 +24,7 @@
 #include "data/clickhouse/Types.hpp"
 #include "data/clickhouse/impl/Batch.hpp"
 #include "data/clickhouse/impl/Cluster.hpp"
+#include "data/clickhouse/impl/Future.hpp"
 #include "data/clickhouse/impl/Result.hpp"
 #include "data/clickhouse/impl/Session.hpp"
 #include "data/clickhouse/impl/Statement.hpp"
@@ -47,6 +48,8 @@ class Handle {
 public:
     using ResultOrErrorType = ResultOrError;
     using MaybeErrorType = MaybeError;
+    using FutureType = Future;
+    using FutureWithCallbackType = FutureWithCallback;
     using StatementType = Statement;
     using PreparedStatementType = PreparedStatement;
     using ResultType = Result;
@@ -76,16 +79,29 @@ public:
     Handle(Handle&&) = default;
 
     /**
-     * @brief Connect to the cluster synchronously.
+     * @brief Connect to the cluster asynchronously.
      *
+     * @return A future
+     */
+    [[nodiscard]] FutureType
+    asyncConnect() const;
+
+    /**
      * @return Possibly an error
      */
     [[nodiscard]] MaybeErrorType
     connect() const;
 
     /**
-     * @brief Execute a query without returning results.
+     * @brief Execute a query without returning results asynchronously.
      *
+     * @param query The query to execute
+     * @return A future
+     */
+    [[nodiscard]] FutureType
+    asyncExecute(std::string const& query) const;
+
+    /**
      * @param query The query to execute
      * @return Possibly an error
      */
@@ -102,8 +118,15 @@ public:
     executeEach(std::vector<std::string> const& queries) const;
 
     /**
-     * @brief Execute a query and return results.
+     * @brief Execute a query and return results asynchronously.
      *
+     * @param query The query to execute
+     * @return A future
+     */
+    [[nodiscard]] FutureType
+    asyncQuery(std::string const& query) const;
+
+    /**
      * @param query The query to execute
      * @return A result or an error
      */

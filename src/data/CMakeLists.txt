@@ -22,6 +22,7 @@ target_sources(
           clickhouse/impl/Statement.cpp
           clickhouse/impl/Batch.cpp
           clickhouse/impl/PreparedStatement.cpp
+          clickhouse/impl/Future.cpp
           ClickHouseBackend.cpp
 )
 

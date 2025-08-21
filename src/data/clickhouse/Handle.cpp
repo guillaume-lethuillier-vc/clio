@@ -19,6 +19,7 @@
 //==============================================================================
 
 #include "data/clickhouse/Handle.hpp"
+#include "data/clickhouse/impl/Future.hpp"
 
 namespace data::clickhouse {
 
@@ -55,32 +56,48 @@ Handle::initialize(std::string_view /*contactPoints*/)
     initialize(settings);
 }
 
+Future
+Handle::asyncConnect() const
+{
+    return Future{[this](boost::asio::yield_context) -> ResultOrError {
+        if (!cluster_.isValid()) {
+            return Error{ClickHouseError{"Cluster not valid: " + cluster_.getLastError()}};
+        }
+
+        if (session_.isValid()) {
+            return {};
+        } else {
+            return Error{ClickHouseError{"Failed to connect to ClickHouse: " + session_.getLastError()}};
+        }
+    }};
+}
+
 MaybeError
 Handle::connect() const
 {
-    if (!cluster_.isValid()) {
-        return Error{ClickHouseError{"Cluster not valid: " + cluster_.getLastError()}};
-    }
+    return asyncConnect().await();
+}
 
-    if (session_.isValid()) {
-        return {};
-    } else {
-        return Error{ClickHouseError{"Failed to connect to ClickHouse: " + session_.getLastError()}};
-    }
+Future
+Handle::asyncExecute(std::string const& query) const
+{
+    return Future{[this, query](boost::asio::yield_context yield) -> ResultOrError {
+        if (!session_.isValid()) {
+            return Error{ClickHouseError{"Not connected to ClickHouse"}};
+        }
+
+        if (session_.execute(query, yield)) {
+            return {};
+        } else {
+            return Error{ClickHouseError{"Failed to execute query: " + query + " - " + session_.getLastError()}};
+        }
+    }};
 }
 
 MaybeError
 Handle::execute(std::string const& query) const
 {
-    if (!session_.isValid()) {
-        return Error{ClickHouseError{"Not connected to ClickHouse"}};
-    }
-
-    if (session_.execute(query)) {
-        return {};
-    } else {
-        return Error{ClickHouseError{"Failed to execute query: " + query + " - " + session_.getLastError()}};
-    }
+    return asyncExecute(query).await();
 }
 
 MaybeError
@@ -94,18 +111,27 @@ Handle::executeEach(std::vector<std::string> const& queries) const
     return {};
 }
 
+Future
+Handle::asyncQuery(std::string const& query) const
+{
+    return Future{[this, query](boost::asio::yield_context yield) -> ResultOrError {
+        if (!session_.isValid()) {
+            return Error{ClickHouseError{"Not connected to ClickHouse"}};
+        }
+
+        auto result = session_.query(query, yield);
+        if (result.columnNames.empty() && result.rows.empty()) {
+            return Error{ClickHouseError{"Query failed: " + session_.getLastError()}};
+        }
+        return result;
+    }};
+}
+
 ResultOrError
 Handle::query(std::string const& query) const
 {
-    if (!session_.isValid()) {
-        return Error{ClickHouseError{"Not connected to ClickHouse"}};
-    }
-
-    auto result = session_.query(query);
-    if (result.columnNames.empty() && result.rows.empty()) {
-        return Error{ClickHouseError{"Query failed: " + session_.getLastError()}};
-    }
-    return result;
+    auto future = asyncQuery(query);
+    return future.get();
 }
 
 bool

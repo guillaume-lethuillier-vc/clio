@@ -23,6 +23,7 @@
 #include "data/clickhouse/impl/Settings.hpp"
 #include "data/clickhouse/impl/Result.hpp"
 #include "util/requests/RequestBuilder.hpp"
+#include <boost/asio/spawn.hpp>
 #include <string>
 #include <memory>
 
@@ -44,11 +45,11 @@ public:
     Session(Session&& other) noexcept = default;
     Session& operator=(Session&& other) noexcept = default;
     
-    // Execute a query and return result
-    Result query(const std::string& sql) const;
+    // Execute a query and return result (async)
+    Result query(const std::string& sql, boost::asio::yield_context yield) const;
     
-    // Execute a query without returning results (INSERT, CREATE, etc.)
-    bool execute(const std::string& sql) const;
+    // Execute a query without returning results (INSERT, CREATE, etc.) (async)
+    bool execute(const std::string& sql, boost::asio::yield_context yield) const;
     
     // Check if session is valid
     bool isValid() const;
