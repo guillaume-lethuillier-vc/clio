@@ -29,6 +29,8 @@
 #include "data/clickhouse/impl/Session.hpp"
 #include "data/clickhouse/impl/Statement.hpp"
 
+namespace data::clickhouse { template<typename> class Schema; }
+
 #include <functional>
 #include <string_view>
 #include <vector>
@@ -140,6 +142,16 @@ public:
      */
     [[nodiscard]] bool
     isConnected() const;
+
+    /**
+     * @brief Initialize the database schema (create database and tables).
+     *
+     * @param settingsProvider The settings provider for table names and database
+     * @return Possibly an error
+     */
+    template<typename SettingsProviderType>
+    [[nodiscard]] MaybeErrorType
+    initializeSchema(SettingsProviderType const& settingsProvider) const;
 
 private:
     void

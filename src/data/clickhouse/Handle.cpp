@@ -20,6 +20,7 @@
 
 #include "data/clickhouse/Handle.hpp"
 #include "data/clickhouse/impl/Future.hpp"
+#include "data/clickhouse/Schema.hpp"
 
 namespace data::clickhouse {
 
@@ -138,6 +139,25 @@ bool
 Handle::isConnected() const
 {
     return cluster_.isValid() && session_.isValid();
+}
+
+template<typename SettingsProviderType>
+MaybeError
+Handle::initializeSchema(SettingsProviderType const& settingsProvider) const
+{
+    Schema<SettingsProviderType> schema(settingsProvider);
+    
+    auto dbResult = execute(schema.createDatabase);
+    if (dbResult.has_value()) {
+        return dbResult.value();
+    }
+    
+    auto tableResult = executeEach(schema.createSchema);
+    if (tableResult.has_value()) {
+        return tableResult.value();
+    }
+    
+    return {}; // Success - no error
 }
 
 }  // namespace data::clickhouse

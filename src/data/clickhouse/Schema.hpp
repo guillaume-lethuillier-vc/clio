@@ -259,9 +259,9 @@ public:
     void
     prepareStatements(Handle& /*handle*/)
     {
-        // For ClickHouse, we don't need to prepare statements like Cassandra
-        // ClickHouse handles query optimization automatically
-        LOG(log_.info()) << "ClickHouse schema prepared successfully";
+        // ClickHouse does not require prepared statements: it optimizes queries automatically
+        // (this method exists for API compatibility with the Cassandra backend)
+        LOG(log_.info()) << "ClickHouse schema ready (no statement preparation needed)";
     }
 };
 

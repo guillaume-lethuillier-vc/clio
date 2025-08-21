@@ -30,7 +30,7 @@ Session::Session(const Settings& settings)
     : settings_(settings), lastError_(""), valid_(true) {
 }
 
-std::string Session::buildRequestParams(const std::string& sql) const {
+std::string Session::buildRequestParams(const std::string& sql, bool /*isQuery*/) const {
     std::ostringstream oss;
     
     oss << "query=" << sql;
@@ -143,7 +143,7 @@ Result Session::query(const std::string& sql, boost::asio::yield_context yield) 
     try {
         auto builder = createRequestBuilder();
         builder.setTarget("/")
-               .addData(buildRequestParams(sql));
+               .addData(buildRequestParams(sql, true));
         
         auto response = builder.postPlain(yield);
         if (response) {
@@ -168,7 +168,7 @@ bool Session::execute(const std::string& sql, boost::asio::yield_context yield) 
     try {
         auto builder = createRequestBuilder();
         builder.setTarget("/")
-               .addData(buildRequestParams(sql));
+               .addData(buildRequestParams(sql, false));
         
         auto response = builder.postPlain(yield);
         return response.has_value();
