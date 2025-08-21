@@ -77,7 +77,7 @@ static constexpr std::array<char const*, 3> kLOAD_CACHE_MODE = {
 /**
  * @brief specific values that are accepted for database type in config.
  */
-static constexpr std::array<char const*, 1> kDATABASE_TYPE = {"cassandra"};
+static constexpr std::array<char const*, 2> kDATABASE_TYPE = {"cassandra", "clickhouse"};
 
 /**
  * @brief specific values that are accepted for server's processing_policy in config.

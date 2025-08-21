@@ -253,6 +253,7 @@ ClioConfigDefinition&
 getClioConfig()
 {
     static ClioConfigDefinition kCLIO_CONFIG{
+        // Cassandra configuration
         {{"database.type",
           ConfigValue{ConfigType::String}.defaultValue("cassandra").withConstraint(gValidateCassandraName)},
          {"database.cassandra.contact_points", ConfigValue{ConfigType::String}.defaultValue("localhost")},
@@ -285,6 +286,20 @@ getClioConfig()
          {"database.cassandra.username", ConfigValue{ConfigType::String}.optional()},
          {"database.cassandra.password", ConfigValue{ConfigType::String}.optional()},
          {"database.cassandra.certfile", ConfigValue{ConfigType::String}.optional()},
+
+         // ClickHouse configuration
+         {"database.clickhouse.host", ConfigValue{ConfigType::String}.defaultValue("localhost")},
+         {"database.clickhouse.port", ConfigValue{ConfigType::Integer}.defaultValue(8123).withConstraint(gValidatePort)},
+         {"database.clickhouse.database", ConfigValue{ConfigType::String}.defaultValue("clio")},
+         {"database.clickhouse.username", ConfigValue{ConfigType::String}.optional()},
+         {"database.clickhouse.password", ConfigValue{ConfigType::String}.optional()},
+         {"database.clickhouse.connect_timeout", ConfigValue{ConfigType::Integer}.optional().withConstraint(gValidateUint32)},
+         {"database.clickhouse.request_timeout", ConfigValue{ConfigType::Integer}.optional().withConstraint(gValidateUint32)},
+         {"database.clickhouse.threads", ConfigValue{ConfigType::Integer}.defaultValue(static_cast<uint32_t>(std::thread::hardware_concurrency())).withConstraint(gValidateUint32)},
+         {"database.clickhouse.max_write_requests_outstanding", ConfigValue{ConfigType::Integer}.defaultValue(10'000).withConstraint(gValidateUint32)},
+         {"database.clickhouse.max_read_requests_outstanding", ConfigValue{ConfigType::Integer}.defaultValue(100'000).withConstraint(gValidateUint32)},
+         {"database.clickhouse.core_connections_per_host", ConfigValue{ConfigType::Integer}.defaultValue(2).withConstraint(gValidateUint16)},
+         {"database.clickhouse.write_batch_size", ConfigValue{ConfigType::Integer}.defaultValue(1000).withConstraint(gValidateUint16)},
 
          {"allow_no_etl", ConfigValue{ConfigType::Boolean}.defaultValue(false)},
          {"__ng_etl", ConfigValue{ConfigType::Boolean}.defaultValue(false)},
