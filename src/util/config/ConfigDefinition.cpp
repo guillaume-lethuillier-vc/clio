@@ -253,6 +253,7 @@ ClioConfigDefinition&
 getClioConfig()
 {
     static ClioConfigDefinition kCLIO_CONFIG{
+        // Cassandra configuration
         {{"database.type",
           ConfigValue{ConfigType::String}.defaultValue("cassandra").withConstraint(gValidateCassandraName)},
          {"database.cassandra.contact_points", ConfigValue{ConfigType::String}.defaultValue("localhost")},
@@ -286,7 +287,16 @@ getClioConfig()
          {"database.cassandra.password", ConfigValue{ConfigType::String}.optional()},
          {"database.cassandra.certfile", ConfigValue{ConfigType::String}.optional()},
 
-         {"allow_no_etl", ConfigValue{ConfigType::Boolean}.defaultValue(false)},
+                 // ClickHouse configuration
+        {"database.clickhouse.host", ConfigValue{ConfigType::String}.defaultValue("localhost")},
+        {"database.clickhouse.port", ConfigValue{ConfigType::Integer}.defaultValue(8123).withConstraint(gValidatePort)},
+        {"database.clickhouse.database", ConfigValue{ConfigType::String}.defaultValue("clio")},
+        {"database.clickhouse.username", ConfigValue{ConfigType::String}.optional()},
+        {"database.clickhouse.password", ConfigValue{ConfigType::String}.optional()},
+        {"database.clickhouse.connect_timeout", ConfigValue{ConfigType::Integer}.optional().withConstraint(gValidateUint32)},
+        {"database.clickhouse.request_timeout", ConfigValue{ConfigType::Integer}.optional().withConstraint(gValidateUint32)},
+
+        {"allow_no_etl", ConfigValue{ConfigType::Boolean}.defaultValue(false)},
          {"__ng_etl", ConfigValue{ConfigType::Boolean}.defaultValue(false)},
          {"etl_sources.[].ip", Array{ConfigValue{ConfigType::String}.optional().withConstraint(gValidateIp)}},
          {"etl_sources.[].ws_port", Array{ConfigValue{ConfigType::String}.optional().withConstraint(gValidatePort)}},
@@ -401,7 +411,8 @@ getClioConfig()
           ConfigValue{ConfigType::Integer}.defaultValue(2).withConstraint(gValidateUint32)},
          {"migration.full_scan_jobs", ConfigValue{ConfigType::Integer}.defaultValue(4).withConstraint(gValidateUint32)},
          {"migration.cursors_per_job",
-          ConfigValue{ConfigType::Integer}.defaultValue(100).withConstraint(gValidateUint32)}},
+          ConfigValue{ConfigType::Integer}.defaultValue(100).withConstraint(gValidateUint32)},
+         {"migration.auto_migrate", ConfigValue{ConfigType::Boolean}.defaultValue(false)}},
     };
 
     return kCLIO_CONFIG;

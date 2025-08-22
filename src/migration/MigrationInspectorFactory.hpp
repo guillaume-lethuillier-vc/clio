@@ -23,6 +23,8 @@
 #include "migration/MigrationInspectorInterface.hpp"
 #include "migration/MigratiorStatus.hpp"
 #include "migration/cassandra/CassandraMigrationManager.hpp"
+#include "migration/clickhouse/ClickHouseMigrationManager.hpp"
+
 #include "util/Assert.hpp"
 #include "util/config/ConfigDefinition.hpp"
 #include "util/log/Logger.hpp"
@@ -50,16 +52,44 @@ makeMigrationInspector(
 {
     ASSERT(backend != nullptr, "Backend is not initialized");
 
-    auto inspector = std::make_shared<migration::cassandra::CassandraMigrationInspector>(backend);
+    auto const type = config.get<std::string>("database.type");
 
-    // Database is empty, we need to initialize the migration table if it is a writeable backend
-    if (not config.get<bool>("read_only") and not backend->hardFetchLedgerRangeNoThrow()) {
-        migration::MigratorStatus const migrated(migration::MigratorStatus::Migrated);
-        for (auto const& name : inspector->allMigratorsNames()) {
-            backend->writeMigratorStatus(name, migrated.toString());
+    if (boost::iequals(type, "cassandra")) {
+        auto inspector = std::make_shared<migration::cassandra::CassandraMigrationInspector>(backend);
+
+        // Database is empty, we need to initialize the migration table if it is a writeable backend
+        if (not config.get<bool>("read_only") and not backend->hardFetchLedgerRangeNoThrow()) {
+            migration::MigratorStatus const migrated(migration::MigratorStatus::Migrated);
+
+            for (auto const& name : inspector->allMigratorsNames()) {
+                backend->writeMigratorStatus(name, migrated.toString());
+            }
         }
+        return inspector;
+    } else if (boost::iequals(type, "clickhouse")) {
+        return std::make_shared<migration::clickhouse::ClickHouseMigrationInspector>(backend);
     }
-    return inspector;
+
+    // Fallback for unsupported database types
+    struct DummyMigrationInspector : public MigrationInspectorInterface {
+        std::vector<std::tuple<std::string, MigratorStatus>> allMigratorsStatusPairs() const override { 
+            return {}; 
+        }
+        std::vector<std::string> allMigratorsNames() const override { 
+            return {}; 
+        }
+        MigratorStatus getMigratorStatusByName(std::string const& /* name */) const override { 
+            return MigratorStatus::Migrated; 
+        }
+        std::string getMigratorDescriptionByName(std::string const& /* name */) const override { 
+            return "Migration not supported for this database type"; 
+        }
+        bool isBlockingClio() const override { 
+            return false; 
+        }
+    };
+    
+    return std::make_shared<DummyMigrationInspector>();
 }
 
 }  // namespace migration

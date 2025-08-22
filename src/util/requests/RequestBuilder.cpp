@@ -218,8 +218,14 @@ RequestBuilder::doRequestImpl(StreamDataType&& streamData, asio::yield_context y
     if (errorCode)
         return std::unexpected{RequestError{"Read error", errorCode}};
 
-    if (response.result() != http::status::ok)
-        return std::unexpected{RequestError{"Response status is not OK"}};
+    // NOTE(NODE-2688): ClickHouse returns 200 for successful operations and 400 for syntax errors
+    if (response.result() != http::status::ok && 
+        response.result() != http::status::bad_request) {
+        std::string errorMsg = "HTTP request failed with status " + 
+                              std::to_string(static_cast<int>(response.result())) + 
+                              ": " + std::string(response.reason());
+        return std::unexpected{RequestError{errorMsg, beast::error_code{}}};
+    }
 
     beast::get_lowest_layer(stream).socket().shutdown(tcp::socket::shutdown_both, errorCode);
 

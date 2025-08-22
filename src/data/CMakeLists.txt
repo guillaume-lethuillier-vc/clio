@@ -14,6 +14,16 @@ target_sources(
           cassandra/impl/SslContext.cpp
           cassandra/Handle.cpp
           cassandra/SettingsProvider.cpp
+          clickhouse/SettingsProvider.cpp
+          clickhouse/Handle.cpp
+          clickhouse/impl/Result.cpp
+          clickhouse/impl/Session.cpp
+          clickhouse/impl/Cluster.cpp
+          clickhouse/impl/Statement.cpp
+          clickhouse/impl/Batch.cpp
+          clickhouse/impl/PreparedStatement.cpp
+          clickhouse/impl/Future.cpp
+          ClickHouseBackend.cpp
 )
 
 target_link_libraries(clio_data PUBLIC cassandra-cpp-driver::cassandra-cpp-driver clio_util)

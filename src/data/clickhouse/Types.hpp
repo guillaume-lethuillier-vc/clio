@@ -1,0 +1,88 @@
+//------------------------------------------------------------------------------
+/*
+    This file is part of clio: https://github.com/XRPLF/clio
+    Copyright (c) 2024, the clio developers.
+
+    Permission to use, copy, modify, and distribute this software for any
+    purpose with or without fee is hereby granted, provided that the above
+    copyright notice and this permission notice appear in all copies.
+
+    THE  SOFTWARE  IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY  SPECIAL,  DIRECT,  INDIRECT,  OR  CONSEQUENTIAL  DAMAGES  OR  ANY
+    DAMAGES  WHATSOEVER  RESULTING  FROM  LOSS  OF  USE,  DATA  OR  PROFITS,
+    WHETHER  IN  AN  ACTION  OF  CONTRACT,  NEGLIGENCE  OR  OTHER  TORTIOUS
+    ACTION,  ARISING  OUT  OF  OR  IN  CONNECTION  WITH  THE  USE  OR
+    PERFORMANCE OF THIS SOFTWARE.
+*/
+//==============================================================================
+
+#pragma once
+
+#include <cstdint>
+#include <expected>
+#include <string>
+#include <utility>
+
+namespace data::clickhouse {
+
+namespace impl {
+struct Settings;
+class Session;
+class Cluster;
+struct Result;
+class Statement;
+class PreparedStatement;
+struct Batch;
+struct Future;
+class FutureWithCallback;
+}  // namespace impl
+
+using Settings = impl::Settings;
+using Result = impl::Result;
+using Statement = impl::Statement;
+using PreparedStatement = impl::PreparedStatement;
+using Batch = impl::Batch;
+using Future = impl::Future;
+using FutureWithCallback = impl::FutureWithCallback;
+
+/**
+ * @brief A strong type wrapper for int32_t
+ *
+ * This is unfortunately needed right now to support uint32_t properly
+ * because clio uses bigint (int64) everywhere except for when one need
+ * to specify LIMIT, which needs an int32 :-/
+ */
+struct Limit {
+    int32_t limit;
+};
+
+/**
+ * @brief A strong type wrapper for string
+ *
+ * This is unfortunately needed right now to support TEXT properly
+ * because clio uses string to represent BLOB
+ * If we want to bind TEXT with string, we need to use this type
+ */
+struct Text {
+    std::string text;
+
+    /**
+     * @brief Construct a new Text object from string type
+     *
+     * @param text The text to wrap
+     */
+    explicit Text(std::string text) : text{std::move(text)}
+    {
+    }
+};
+
+class Handle;
+class ClickHouseError;
+
+using MaybeError = std::expected<void, ClickHouseError>;
+using ResultOrError = std::expected<Result, ClickHouseError>;
+using Error = std::unexpected<ClickHouseError>;
+
+}  // namespace data::clickhouse

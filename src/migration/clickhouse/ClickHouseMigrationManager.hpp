@@ -10,32 +10,33 @@
     THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
     WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
     MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL,  DIRECT,  INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+    ANY  SPECIAL,  DIRECT,  INDIRECT, OR  CONSEQUENTIAL  DAMAGES  OR  ANY
+    DAMAGES  WHATSOEVER  RESULTING  FROM  LOSS  OF  USE,  DATA  OR  PROFITS,
+    WHETHER  IN  AN  ACTION  OF  CONTRACT,  NEGLIGENCE  OR  OTHER  TORTIOUS
+    ACTION,  ARISING  OUT  OF  OR  IN  CONNECTION  WITH  THE  USE  OR
+    PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
 #pragma once
 
 #include "data/BackendInterface.hpp"
-#include "migration/cassandra/CassandraMigrationBackend.hpp"
+#include "migration/clickhouse/ClickHouseMigrationBackend.hpp"
 #include "migration/impl/MigrationInspectorBase.hpp"
 #include "migration/impl/MigrationManagerBase.hpp"
 #include "migration/impl/MigratorsRegister.hpp"
 
-namespace migration::cassandra {
+namespace migration::clickhouse {
 
 template <typename BackendType>
-using CassandraSupportedMigrators = migration::impl::MigratorsRegister<BackendType>;
+using ClickHouseSupportedMigrators = migration::impl::MigratorsRegister<BackendType>;
 
-using CassandraMigrationProcessor = CassandraSupportedMigrators<CassandraMigrationBackend>;
+using ClickHouseMigrationProcessor = ClickHouseSupportedMigrators<ClickHouseMigrationBackend>;
 
-using CassandraMigrationQuerier = CassandraSupportedMigrators<data::BackendInterface>;
+using ClickHouseMigrationQuerier = ClickHouseSupportedMigrators<data::BackendInterface>;
 
-using CassandraMigrationInspector = migration::impl::MigrationInspectorBase<CassandraMigrationQuerier>;
+using ClickHouseMigrationInspector = migration::impl::MigrationInspectorBase<ClickHouseMigrationQuerier>;
 
-using CassandraMigrationManager = migration::impl::MigrationManagerBase<CassandraMigrationProcessor>;
+using ClickHouseMigrationManager = migration::impl::MigrationManagerBase<ClickHouseMigrationProcessor>;
 
-}  // namespace migration::cassandra
+}  // namespace migration::clickhouse

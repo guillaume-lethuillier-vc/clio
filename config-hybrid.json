@@ -1,0 +1,85 @@
+{
+  "database": {
+    "type": "clickhouse",
+    "clickhouse": {
+      "host": "localhost",
+      "port": 8123,
+      "database": "clio",
+      "username": "default",
+      "password": "clickhouse",
+      "connect_timeout": 10000,
+      "request_timeout": 30000,
+      "threads": 4,
+      "max_write_requests_outstanding": 10000,
+      "max_read_requests_outstanding": 100000,
+      "core_connections_per_host": 2,
+      "write_batch_size": 1000
+    }
+  },
+  "etl_sources": [
+    {
+      "ip": "127.0.0.1",
+      "ws_port": "51233",
+      "grpc_port": "50051"
+    }
+  ],
+  "server": {
+    "ip": "0.0.0.0",
+    "port": 51236,
+    "max_queue_size": 500,
+    "local_admin": true,
+    "processing_policy": "parallel",
+    "parallel_requests_limit": 10,
+    "ws_max_sending_queue_size": 1500
+  },
+  "allow_no_etl": false,
+  "read_only": false,
+  "forwarding": {
+    "cache_timeout": 0.25,
+    "request_timeout": 30.0
+  },
+  "rpc": {
+    "cache_timeout": 0.5
+  },
+  "dos_guard": {
+    "whitelist": ["127.0.0.1", "172.20.0.0/16"],
+    "max_fetches": 1000000,
+    "max_connections": 20,
+    "max_requests": 20,
+    "sweep_interval": 1
+  },
+  "log": {
+    "channels": [
+      {
+        "channel": "Backend",
+        "level": "info"
+      },
+      {
+        "channel": "WebServer",
+        "level": "info"
+      },
+      {
+        "channel": "ETL",
+        "level": "info"
+      },
+      {
+        "channel": "RPC",
+        "level": "info"
+      }
+    ],
+    "level": "info",
+    "format": "%Y-%m-%d %H:%M:%S.%f %^%3!l:%n%$ - %v",
+    "is_async": true,
+    "enable_console": true,
+    "rotation_size": 2048,
+    "directory_max_files": 25,
+    "tag_style": "uint"
+  },
+  "prometheus": {
+    "enabled": true,
+    "compress_reply": true
+  },
+  "graceful_period": 10.0,
+  "extractor_threads": 8,
+  "num_markers": 48
+}

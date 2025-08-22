@@ -27,6 +27,14 @@ class ClioConan(ConanFile):
     requires = [
         'boost/1.83.0',
         'cassandra-cpp-driver/2.17.0',
+        # Note(NODE-2688): clickhouse-cpp/2.5.1 cannot be used (unfortunately) because of CMake 
+        # compatibility issues.
+        #
+        # The official Conan package (last updated 2024-11-26) requires CMake < 3.5,
+        # but the Clio project requires CMake >= 3.20 and C++23 support.
+        # Using CMake 3.20.6 as a build requirement caused
+        # C++23 feature compatibility issues (std::expected, std::unreachable, etc.).
+        # As a result, a custom HTTP-based implementation is needed instead.
         'fmt/11.2.0',
         'protobuf/3.21.12',
         'grpc/1.50.1',

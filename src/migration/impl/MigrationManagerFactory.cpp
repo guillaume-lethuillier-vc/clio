@@ -12,7 +12,7 @@
     MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
     ANY  SPECIAL,  DIRECT,  INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
     WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    ACTION  OF  CONTRACT,  NEGLIGENCE OR OTHER  TORTIOUS  ACTION, ARISING OUT OF
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
@@ -20,12 +20,14 @@
 #include "migration/impl/MigrationManagerFactory.hpp"
 
 #include "data/LedgerCacheInterface.hpp"
-#include "data/cassandra/SettingsProvider.hpp"
 #include "migration/MigrationManagerInterface.hpp"
-#include "migration/cassandra/CassandraMigrationBackend.hpp"
-#include "migration/cassandra/CassandraMigrationManager.hpp"
 #include "util/config/ConfigDefinition.hpp"
 #include "util/log/Logger.hpp"
+
+#include "data/cassandra/SettingsProvider.hpp"
+#include "migration/cassandra/CassandraMigrationBackend.hpp"
+#include "migration/cassandra/CassandraMigrationManager.hpp"
+#include "migration/clickhouse/ClickHouseMigrationManager.hpp"
 
 #include <boost/algorithm/string/predicate.hpp>
 
@@ -43,18 +45,24 @@ makeMigrationManager(util::config::ClioConfigDefinition const& config, data::Led
 
     auto const type = config.get<std::string>("database.type");
 
-    if (not boost::iequals(type, "cassandra")) {
-        LOG(log.error()) << "Unknown database type to migrate: " << type;
-        return std::unexpected(std::string("Invalid database type"));
+    if (boost::iequals(type, "cassandra")) {
+        LOG(log.info()) << "Creating Cassandra migration manager";
+        auto const cfg = config.getObject("database." + type);
+        auto migrationCfg = config.getObject("migration");
+        return std::make_shared<cassandra::CassandraMigrationManager>(
+            std::make_shared<cassandra::CassandraMigrationBackend>(data::cassandra::SettingsProvider{cfg}, cache),
+            std::move(migrationCfg)
+        );
+    } else if (boost::iequals(type, "clickhouse")) {
+        LOG(log.info()) << "Creating ClickHouse migration manager";
+        auto const cfg = config.getObject("database." + type);
+        auto settingsProvider = data::clickhouse::SettingsProvider{cfg};
+        auto backend = std::make_shared<migration::clickhouse::ClickHouseMigrationBackend>(std::move(settingsProvider), cache);
+        return std::make_shared<migration::clickhouse::ClickHouseMigrationManager>(std::move(backend), config.getObject("migration"));
     }
 
-    auto const cfg = config.getObject("database." + type);
-    auto migrationCfg = config.getObject("migration");
-
-    return std::make_shared<cassandra::CassandraMigrationManager>(
-        std::make_shared<cassandra::CassandraMigrationBackend>(data::cassandra::SettingsProvider{cfg}, cache),
-        std::move(migrationCfg)
-    );
+    LOG(log.error()) << "Unknown database type to migrate: " << type;
+    return std::unexpected(std::string("Invalid database type: ") + type);
 }
 
 }  // namespace migration::impl

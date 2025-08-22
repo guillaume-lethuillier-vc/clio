@@ -1,0 +1,61 @@
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    platform: linux/amd64
+    container_name: clio-clickhouse
+    hostname: clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    environment:
+      - CLICKHOUSE_DB=clio
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=clickhouse
+      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "--user", "default:clickhouse", "http://localhost:8123/?query=SELECT%201"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - clio-network
+
+  rippled:
+    image: xpring/rippled:latest
+    platform: linux/amd64
+    container_name: clio-rippled
+    hostname: rippled
+    ports:
+      - "50005:50005"
+      - "50051:50051"
+      - "51233:51233"
+      - "51234:51234"
+      - "51235:51235"
+    volumes:
+      - rippled_data:/var/lib/rippled
+      - rippled_logs:/var/log/rippled
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:50005/ || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - clio-network
+
+volumes:
+  clickhouse_data:
+    driver: local
+  rippled_data:
+    driver: local
+  rippled_logs:
+    driver: local
+
+networks:
+  clio-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

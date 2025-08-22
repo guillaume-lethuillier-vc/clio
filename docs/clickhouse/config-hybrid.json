@@ -1,0 +1,29 @@
+{
+  "database": {
+    "type": "clickhouse",
+    "clickhouse": {
+      "host": "localhost",
+      "port": 8123,
+      "database": "clio",
+      "username": "default",
+      "password": "clickhouse"
+    }
+  },
+  "etl_sources": [
+    {
+      "ip": "localhost",
+      "ws_port": "51233",
+      "grpc_port": "50051"
+    }
+  ],
+  "allow_no_etl": false,
+  "server": {
+    "ip": "0.0.0.0",
+    "port": 51236,
+    "processing_policy": "parallel"
+  },
+  "log": {
+    "level": "info",
+    "enable_console": true
+  }
+}
