@@ -24,10 +24,9 @@
 #include "util/config/ConfigDefinition.hpp"
 #include "util/log/Logger.hpp"
 
-// NOTE(NODE-2688): TEMPORARILY DISABLED: Cassandra backend causing global static initialization crashes
-// #include "data/CassandraBackend.hpp"
+#include "data/CassandraBackend.hpp"
 #include "data/ClickHouseBackend.hpp"
-// #include "data/cassandra/SettingsProvider.hpp"
+#include "data/cassandra/SettingsProvider.hpp"
 #include "data/clickhouse/SettingsProvider.hpp"
 
 #include <boost/algorithm/string.hpp>
@@ -57,21 +56,17 @@ makeBackend(util::config::ClioConfigDefinition const& config, data::LedgerCacheI
     auto const type = config.get<std::string>("database.type");
     std::shared_ptr<BackendInterface> backend = nullptr;
 
-                    // NOTE(NODE-2688): TEMPORARILY DISABLED: Cassandra backend causing global static initialization crashes
-                    /*
                 if (boost::iequals(type, "cassandra")) {
-                     try {
-                         auto const cfg = config.getObject("database." + type);
-                         backend = std::make_shared<data::cassandra::CassandraBackend>(
-                             data::cassandra::SettingsProvider{cfg}, cache, readOnly
-                         );
-                     } catch (std::exception const& ex) {
-                         LOG(log.error()) << "Failed to create Cassandra backend: " << ex.what();
-                         throw std::runtime_error("Failed to create Cassandra backend: " + std::string(ex.what()));
-                     }
-                 } else 
-                  */
-                if (boost::iequals(type, "clickhouse")) {
+                    try {
+                        auto const cfg = config.getObject("database." + type);
+                        backend = std::make_shared<data::cassandra::CassandraBackend>(
+                            data::cassandra::SettingsProvider{cfg}, cache, readOnly
+                        );
+                    } catch (std::exception const& ex) {
+                        LOG(log.error()) << "Failed to create Cassandra backend: " << ex.what();
+                        throw std::runtime_error("Failed to create Cassandra backend: " + std::string(ex.what()));
+                    }
+                } else if (boost::iequals(type, "clickhouse")) {
         try {
             auto const cfg = config.getObject("database." + type);
             backend = std::make_shared<data::clickhouse::ClickHouseBackend>(

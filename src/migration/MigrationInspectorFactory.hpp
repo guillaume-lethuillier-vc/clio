@@ -23,8 +23,7 @@
 #include "migration/MigrationInspectorInterface.hpp"
 #include "migration/MigratiorStatus.hpp"
 #include "migration/clickhouse/ClickHouseMigrationManager.hpp"
-// NOTE(NODE-2688): TEMPORARILY DISABLED: Cassandra backend causing global static initialization crashes
-// #include "migration/cassandra/CassandraMigrationManager.hpp"
+#include "migration/cassandra/CassandraMigrationManager.hpp"
 
 #include "util/Assert.hpp"
 #include "util/config/ConfigDefinition.hpp"
@@ -64,21 +63,16 @@ makeMigrationInspector(
         } catch (std::exception const& ex) {
             LOG(log.error()) << "Failed to create ClickHouse migration inspector: " << ex.what();
         }
+    } else if (boost::iequals(type, "cassandra")) {
+        LOG(log.info()) << "Creating Cassandra migration inspector";
+        try {
+            return std::make_shared<migration::cassandra::CassandraMigrationInspector>(backend);
+        } catch (std::exception const& ex) {
+            LOG(log.error()) << "Failed to create Cassandra migration inspector: " << ex.what();
+        }
     }
-    
-    // NOTE(NODE-2688): TEMPORARILY DISABLED: Cassandra backend causing global static initialization crashes
-    /*
-     } else if (boost::iequals(type, "cassandra")) {
-         LOG(log.info()) << "Creating Cassandra migration inspector";
-         try {
-             return std::make_shared<migration::cassandra::CassandraMigrationInspector>(backend);
-         } catch (std::exception const& ex) {
-             LOG(log.error()) << "Failed to create Cassandra migration inspector: " << ex.what();
-         }
-     }
-    */
 
-    LOG(log.info()) << "Migration not supported for database type: " << type << " (only clickhouse is supported), using dummy inspector";
+    LOG(log.info()) << "Migration not supported for database type: " << type << " (supported types: clickhouse, cassandra), using dummy inspector";
     
     struct DummyMigrationInspector : public MigrationInspectorInterface {
         std::vector<std::tuple<std::string, MigratorStatus>> allMigratorsStatusPairs() const override { 

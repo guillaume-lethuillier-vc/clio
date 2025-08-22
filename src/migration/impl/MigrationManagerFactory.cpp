@@ -20,7 +20,10 @@
 #include "migration/impl/MigrationManagerFactory.hpp"
 
 #include "data/LedgerCacheInterface.hpp"
+#include "data/cassandra/SettingsProvider.hpp"
 #include "migration/MigrationManagerInterface.hpp"
+#include "migration/cassandra/CassandraMigrationBackend.hpp"
+#include "migration/cassandra/CassandraMigrationManager.hpp"
 #include "migration/clickhouse/ClickHouseMigrationManager.hpp"
 #include "util/config/ConfigDefinition.hpp"
 #include "util/log/Logger.hpp"
@@ -57,7 +60,19 @@ makeMigrationManager(util::config::ClioConfigDefinition const& config, data::Led
         }
     }
     */ 
-    if (boost::iequals(type, "clickhouse")) {
+    if (boost::iequals(type, "cassandra")) {
+        LOG(log.info()) << "Creating Cassandra migration manager";
+        try {
+            auto const cfg = config.getObject("database." + type);
+            auto migrationCfg = config.getObject("migration");
+            return std::make_shared<cassandra::CassandraMigrationManager>(
+                std::make_shared<cassandra::CassandraMigrationBackend>(data::cassandra::SettingsProvider{cfg}, cache),
+                std::move(migrationCfg)
+            );
+        } catch (std::exception const& ex) {
+            return std::unexpected(std::string("Failed to create Cassandra migration manager: ") + ex.what());
+        }
+    } else if (boost::iequals(type, "clickhouse")) {
         LOG(log.info()) << "Creating ClickHouse migration manager";
         try {
             auto const cfg = config.getObject("database." + type);
@@ -69,8 +84,8 @@ makeMigrationManager(util::config::ClioConfigDefinition const& config, data::Led
         }
     }
 
-    LOG(log.error()) << "Unknown database type to migrate: " << type << " (only ClickHouse is supported)";
-    return std::unexpected(std::string("Invalid database type: ") + type + " (only ClickHouse is supported)");
+    LOG(log.error()) << "Unknown database type to migrate: " << type;
+    return std::unexpected(std::string("Invalid database type: ") + type);
 }
 
 }  // namespace migration::impl
