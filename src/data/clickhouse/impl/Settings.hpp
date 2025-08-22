@@ -50,6 +50,19 @@ struct Settings {
 
     /** @brief Password to match the `username` */
     std::optional<std::string> password = std::nullopt;
+
+    /** @brief Direct access to connection info for convenience */
+    std::string getUsername() const { return username.value_or(""); }
+    std::string getPassword() const { return password.value_or(""); }
+
+    /**
+     * @brief Returns the default settings.
+     */
+    static Settings
+    defaultSettings()
+    {
+        return Settings();
+    }
 };
 
 } // namespace data::clickhouse::impl

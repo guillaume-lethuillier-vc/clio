@@ -47,8 +47,8 @@ std::string Session::buildRequestParams(const std::string& sql, bool isQuery) co
 
 util::requests::RequestBuilder Session::createRequestBuilder() const {
     auto builder = util::requests::RequestBuilder(
-        settings_.connectionInfo.host, 
-        std::to_string(settings_.connectionInfo.port)
+        settings_.host, 
+        std::to_string(settings_.port)
     );
     
     // build URL with authentication and database parameters
@@ -56,9 +56,9 @@ util::requests::RequestBuilder Session::createRequestBuilder() const {
     bool hasParams = false;
     
     // db parameter (if specified)
-    if (!settings_.connectionInfo.database.empty()) {
+    if (!settings_.database.empty()) {
         if (hasParams) urlParams << "&";
-        urlParams << "database=" << settings_.connectionInfo.database;
+        urlParams << "database=" << settings_.database;
         hasParams = true;
     }
     
