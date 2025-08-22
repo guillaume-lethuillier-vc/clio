@@ -27,10 +27,6 @@ namespace data::clickhouse {
 SettingsProvider::SettingsProvider(util::config::ObjectView const& cfg) : config_{cfg}
 {
     database_ = config_.get<std::string>("database");
-    
-    if (auto const prefix = config_.maybeValue<std::string>("table_prefix")) {
-        tablePrefix_ = *prefix;
-    }
 }
 
 Settings
@@ -66,10 +62,6 @@ SettingsProvider::parseSettings() const
     settings.maxReadRequestsOutstanding = config_.get<uint32_t>("max_read_requests_outstanding");
     settings.coreConnectionsPerHost = config_.get<uint32_t>("core_connections_per_host");
     settings.writeBatchSize = config_.get<uint32_t>("write_batch_size");
-
-    if (auto const queueSize = config_.maybeValue<uint32_t>("queue_size_io")) {
-        settings.queueSizeIO = *queueSize;
-    }
 
     // Parse authentication settings
     if (auto const username = config_.maybeValue<std::string>("username")) {

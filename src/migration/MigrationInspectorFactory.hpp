@@ -22,8 +22,8 @@
 #include "data/BackendInterface.hpp"
 #include "migration/MigrationInspectorInterface.hpp"
 #include "migration/MigratiorStatus.hpp"
-#include "migration/clickhouse/ClickHouseMigrationManager.hpp"
 #include "migration/cassandra/CassandraMigrationManager.hpp"
+#include "migration/clickhouse/ClickHouseMigrationManager.hpp"
 
 #include "util/Assert.hpp"
 #include "util/config/ConfigDefinition.hpp"
@@ -54,26 +54,23 @@ makeMigrationInspector(
 
     auto const type = config.get<std::string>("database.type");
 
-    static util::Logger const log{"Migration"};
-    
-    if (boost::iequals(type, "clickhouse")) {
-        LOG(log.info()) << "Creating ClickHouse migration inspector";
-        try {
-            return std::make_shared<migration::clickhouse::ClickHouseMigrationInspector>(backend);
-        } catch (std::exception const& ex) {
-            LOG(log.error()) << "Failed to create ClickHouse migration inspector: " << ex.what();
+    if (boost::iequals(type, "cassandra")) {
+        auto inspector = std::make_shared<migration::cassandra::CassandraMigrationInspector>(backend);
+
+        // Database is empty, we need to initialize the migration table if it is a writeable backend
+        if (not config.get<bool>("read_only") and not backend->hardFetchLedgerRangeNoThrow()) {
+            migration::MigratorStatus const migrated(migration::MigratorStatus::Migrated);
+
+            for (auto const& name : inspector->allMigratorsNames()) {
+                backend->writeMigratorStatus(name, migrated.toString());
+            }
         }
-    } else if (boost::iequals(type, "cassandra")) {
-        LOG(log.info()) << "Creating Cassandra migration inspector";
-        try {
-            return std::make_shared<migration::cassandra::CassandraMigrationInspector>(backend);
-        } catch (std::exception const& ex) {
-            LOG(log.error()) << "Failed to create Cassandra migration inspector: " << ex.what();
-        }
+        return inspector;
+    } else if (boost::iequals(type, "clickhouse")) {
+        return std::make_shared<migration::clickhouse::ClickHouseMigrationInspector>(backend);
     }
 
-    LOG(log.info()) << "Migration not supported for database type: " << type << " (supported types: clickhouse, cassandra), using dummy inspector";
-    
+    // Fallback for unsupported database types
     struct DummyMigrationInspector : public MigrationInspectorInterface {
         std::vector<std::tuple<std::string, MigratorStatus>> allMigratorsStatusPairs() const override { 
             return {}; 

@@ -20,13 +20,14 @@
 #include "migration/impl/MigrationManagerFactory.hpp"
 
 #include "data/LedgerCacheInterface.hpp"
-#include "data/cassandra/SettingsProvider.hpp"
 #include "migration/MigrationManagerInterface.hpp"
+#include "util/config/ConfigDefinition.hpp"
+#include "util/log/Logger.hpp"
+
+#include "data/cassandra/SettingsProvider.hpp"
 #include "migration/cassandra/CassandraMigrationBackend.hpp"
 #include "migration/cassandra/CassandraMigrationManager.hpp"
 #include "migration/clickhouse/ClickHouseMigrationManager.hpp"
-#include "util/config/ConfigDefinition.hpp"
-#include "util/log/Logger.hpp"
 
 #include <boost/algorithm/string/predicate.hpp>
 
@@ -44,44 +45,20 @@ makeMigrationManager(util::config::ClioConfigDefinition const& config, data::Led
 
     auto const type = config.get<std::string>("database.type");
 
-    // NOTE(NODE-2688): TEMPORARILY DISABLED: Cassandra backend causing global static initialization crashes
-    /*
     if (boost::iequals(type, "cassandra")) {
         LOG(log.info()) << "Creating Cassandra migration manager";
-        try {
-            auto const cfg = config.getObject("database." + type);
-            auto migrationCfg = config.getObject("migration");
-            return std::make_shared<cassandra::CassandraMigrationManager>(
-                std::make_shared<cassandra::CassandraMigrationBackend>(data::cassandra::SettingsProvider{cfg}, cache),
-                std::move(migrationCfg)
-            );
-        } catch (std::exception const& ex) {
-            return std::unexpected(std::string("Failed to create Cassandra migration manager: ") + ex.what());
-        }
-    }
-    */ 
-    if (boost::iequals(type, "cassandra")) {
-        LOG(log.info()) << "Creating Cassandra migration manager";
-        try {
-            auto const cfg = config.getObject("database." + type);
-            auto migrationCfg = config.getObject("migration");
-            return std::make_shared<cassandra::CassandraMigrationManager>(
-                std::make_shared<cassandra::CassandraMigrationBackend>(data::cassandra::SettingsProvider{cfg}, cache),
-                std::move(migrationCfg)
-            );
-        } catch (std::exception const& ex) {
-            return std::unexpected(std::string("Failed to create Cassandra migration manager: ") + ex.what());
-        }
+        auto const cfg = config.getObject("database." + type);
+        auto migrationCfg = config.getObject("migration");
+        return std::make_shared<cassandra::CassandraMigrationManager>(
+            std::make_shared<cassandra::CassandraMigrationBackend>(data::cassandra::SettingsProvider{cfg}, cache),
+            std::move(migrationCfg)
+        );
     } else if (boost::iequals(type, "clickhouse")) {
         LOG(log.info()) << "Creating ClickHouse migration manager";
-        try {
-            auto const cfg = config.getObject("database." + type);
-            auto settingsProvider = data::clickhouse::SettingsProvider{cfg};
-            auto backend = std::make_shared<migration::clickhouse::ClickHouseMigrationBackend>(std::move(settingsProvider), cache);
-            return std::make_shared<migration::clickhouse::ClickHouseMigrationManager>(std::move(backend), config.getObject("migration"));
-        } catch (std::exception const& ex) {
-            return std::unexpected(std::string("Failed to create ClickHouse migration manager: ") + ex.what());
-        }
+        auto const cfg = config.getObject("database." + type);
+        auto settingsProvider = data::clickhouse::SettingsProvider{cfg};
+        auto backend = std::make_shared<migration::clickhouse::ClickHouseMigrationBackend>(std::move(settingsProvider), cache);
+        return std::make_shared<migration::clickhouse::ClickHouseMigrationManager>(std::move(backend), config.getObject("migration"));
     }
 
     LOG(log.error()) << "Unknown database type to migrate: " << type;

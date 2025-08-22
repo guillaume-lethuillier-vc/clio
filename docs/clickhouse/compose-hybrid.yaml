@@ -14,7 +14,6 @@ services:
       - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
     volumes:
       - clickhouse_data:/var/lib/clickhouse
-      - ../../docs/clickhouse/config.xml:/etc/clickhouse-server/config.xml:ro
     healthcheck:
       test: ["CMD", "curl", "-sf", "--user", "default:clickhouse", "http://localhost:8123/?query=SELECT%201"]
       interval: 10s

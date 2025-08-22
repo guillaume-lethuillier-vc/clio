@@ -35,7 +35,6 @@ class SettingsProvider {
     util::config::ObjectView config_;
 
     std::string database_;
-    std::optional<std::string> tablePrefix_;
 
 public:
     /**
@@ -66,7 +65,7 @@ public:
     [[nodiscard]] std::optional<std::string>
     getTablePrefix() const
     {
-        return tablePrefix_;
+        return std::nullopt; 
     }
 
 private:

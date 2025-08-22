@@ -33,21 +33,6 @@ namespace data::clickhouse::impl {
  */
 struct Settings {
     static constexpr std::size_t kDEFAULT_CONNECTION_TIMEOUT = 10000;
-    static constexpr uint32_t kDEFAULT_MAX_WRITE_REQUESTS_OUTSTANDING = 10'000;
-    static constexpr uint32_t kDEFAULT_MAX_READ_REQUESTS_OUTSTANDING = 100'000;
-    static constexpr std::size_t kDEFAULT_BATCH_SIZE = 20;
-
-    /**
-     * @brief Represents the configuration of contact points for ClickHouse.
-     */
-    struct ContactPoints {
-        std::string host = "127.0.0.1";  // defaults to localhost
-        uint16_t port = 8123;  // default ClickHouse HTTP port
-        std::string database = "default";  // default database
-    };
-
-    /** @brief Enables or disables ClickHouse driver logger */
-    bool enableLog = false;
 
     /** @brief Connect timeout specified in milliseconds */
     std::chrono::milliseconds connectionTimeout = std::chrono::milliseconds{kDEFAULT_CONNECTION_TIMEOUT};
@@ -56,58 +41,15 @@ struct Settings {
     std::chrono::milliseconds requestTimeout = std::chrono::milliseconds{0};  // no timeout at all
 
     /** @brief Connection information */
-    ContactPoints connectionInfo = ContactPoints{};
-
-    /** @brief Direct access to connection info for convenience */
-    std::string host() const { return connectionInfo.host; }
-    uint16_t port() const { return connectionInfo.port; }
-    std::string database() const { return connectionInfo.database; }
-    std::string getUsername() const { return username.value_or(""); }
-    std::string getPassword() const { return password.value_or(""); }
-
-    /** @brief The number of threads for the driver to pool */
-    uint32_t threads = std::thread::hardware_concurrency();
-
-    /** @brief The maximum number of outstanding write requests at any given moment */
-    uint32_t maxWriteRequestsOutstanding = kDEFAULT_MAX_WRITE_REQUESTS_OUTSTANDING;
-
-    /** @brief The maximum number of outstanding read requests at any given moment */
-    uint32_t maxReadRequestsOutstanding = kDEFAULT_MAX_READ_REQUESTS_OUTSTANDING;
-
-    /** @brief The number of connection per host to always have active */
-    uint32_t coreConnectionsPerHost = 1u;
-
-    /** @brief Size of batches when writing */
-    std::size_t writeBatchSize = kDEFAULT_BATCH_SIZE;
-
-    /** @brief Size of the IO queue */
-    std::optional<uint32_t> queueSizeIO = std::nullopt;
+    std::string host = "127.0.0.1";
+    uint16_t port = 8123;
+    std::string database = "default";
 
     /** @brief Username/login */
     std::optional<std::string> username = std::nullopt;
 
     /** @brief Password to match the `username` */
     std::optional<std::string> password = std::nullopt;
-
-    /**
-     * @brief Creates a new Settings object as a copy of the current one with overridden contact points.
-     */
-    Settings
-    withContactPoints(std::string_view host, uint16_t port = 8123, std::string_view database = "default")
-    {
-        auto tmp = *this;
-        tmp.connectionInfo = ContactPoints{.host = std::string{host}, .port = port, .database = std::string{database}};
-        return tmp;
-    }
-
-    /**
-     * @brief Returns the default settings.
-     */
-    static Settings
-    defaultSettings()
-    {
-        return Settings();
-    }
 };
 
 } // namespace data::clickhouse::impl
