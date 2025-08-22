@@ -105,11 +105,11 @@ public:
             throw std::runtime_error("Could not connect to ClickHouse database: " + res.error().message());
 
         if (not readOnly) {
-            if (auto const res = handle_.execute(schema_.createDatabase); not res) {
+            if (auto const res = handle_.execute(schema_.getCreateDatabase()); not res) {
                 throw std::runtime_error("Could not create database: " + res.error().message());
             }
 
-            if (auto const res = handle_.executeEach(schema_.createSchema); not res)
+            if (auto const res = handle_.executeEach(schema_.getCreateSchema()); not res)
                 throw std::runtime_error("Could not create schema: " + res.error().message());
         }
 

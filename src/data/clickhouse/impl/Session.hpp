@@ -51,6 +51,9 @@ public:
     // Execute a query without returning results (INSERT, CREATE, etc.) (async)
     bool execute(const std::string& sql, boost::asio::yield_context yield) const;
     
+    // Execute a query without returning results (INSERT, CREATE, etc.) (sync)
+    bool executeSync(const std::string& sql) const;
+    
     // Check if session is valid
     bool isValid() const;
     

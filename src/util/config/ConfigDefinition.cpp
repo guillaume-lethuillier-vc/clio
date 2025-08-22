@@ -299,9 +299,11 @@ getClioConfig()
          {"database.clickhouse.max_write_requests_outstanding", ConfigValue{ConfigType::Integer}.defaultValue(10'000).withConstraint(gValidateUint32)},
          {"database.clickhouse.max_read_requests_outstanding", ConfigValue{ConfigType::Integer}.defaultValue(100'000).withConstraint(gValidateUint32)},
          {"database.clickhouse.core_connections_per_host", ConfigValue{ConfigType::Integer}.defaultValue(2).withConstraint(gValidateUint16)},
-         {"database.clickhouse.write_batch_size", ConfigValue{ConfigType::Integer}.defaultValue(1000).withConstraint(gValidateUint16)},
+                 {"database.clickhouse.write_batch_size", ConfigValue{ConfigType::Integer}.defaultValue(1000).withConstraint(gValidateUint16)},
+        {"database.clickhouse.queue_size_io", ConfigValue{ConfigType::Integer}.optional().withConstraint(gValidateUint32)},
+        {"database.clickhouse.table_prefix", ConfigValue{ConfigType::String}.optional()},
 
-         {"allow_no_etl", ConfigValue{ConfigType::Boolean}.defaultValue(false)},
+        {"allow_no_etl", ConfigValue{ConfigType::Boolean}.defaultValue(false)},
          {"__ng_etl", ConfigValue{ConfigType::Boolean}.defaultValue(false)},
          {"etl_sources.[].ip", Array{ConfigValue{ConfigType::String}.optional().withConstraint(gValidateIp)}},
          {"etl_sources.[].ws_port", Array{ConfigValue{ConfigType::String}.optional().withConstraint(gValidatePort)}},
@@ -416,7 +418,8 @@ getClioConfig()
           ConfigValue{ConfigType::Integer}.defaultValue(2).withConstraint(gValidateUint32)},
          {"migration.full_scan_jobs", ConfigValue{ConfigType::Integer}.defaultValue(4).withConstraint(gValidateUint32)},
          {"migration.cursors_per_job",
-          ConfigValue{ConfigType::Integer}.defaultValue(100).withConstraint(gValidateUint32)}},
+          ConfigValue{ConfigType::Integer}.defaultValue(100).withConstraint(gValidateUint32)},
+         {"migration.auto_migrate", ConfigValue{ConfigType::Boolean}.defaultValue(false)}},
     };
 
     return kCLIO_CONFIG;

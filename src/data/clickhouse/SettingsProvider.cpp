@@ -19,7 +19,6 @@
 
 #include "data/clickhouse/SettingsProvider.hpp"
 #include "data/clickhouse/impl/Settings.hpp"
-#include "util/log/Logger.hpp"
 
 #include <chrono>
 
@@ -28,6 +27,7 @@ namespace data::clickhouse {
 SettingsProvider::SettingsProvider(util::config::ObjectView const& cfg) : config_{cfg}
 {
     database_ = config_.get<std::string>("database");
+    
     if (auto const prefix = config_.maybeValue<std::string>("table_prefix")) {
         tablePrefix_ = *prefix;
     }
@@ -45,13 +45,8 @@ SettingsProvider::parseSettings() const
     Settings settings;
 
     // Parse connection settings
-    if (auto const host = config_.maybeValue<std::string>("host")) {
-        settings.connectionInfo.host = *host;
-    }
-
-    if (auto const port = config_.maybeValue<uint16_t>("port")) {
-        settings.connectionInfo.port = *port;
-    }
+    settings.connectionInfo.host = config_.get<std::string>("host");
+    settings.connectionInfo.port = config_.get<uint16_t>("port");
 
     // Use the database from constructor or default
     settings.connectionInfo.database = database_;
@@ -66,25 +61,11 @@ SettingsProvider::parseSettings() const
     }
 
     // Parse thread and connection settings
-    if (auto const threads = config_.maybeValue<uint32_t>("threads")) {
-        settings.threads = *threads;
-    }
-
-    if (auto const maxWriteRequests = config_.maybeValue<uint32_t>("max_write_requests_outstanding")) {
-        settings.maxWriteRequestsOutstanding = *maxWriteRequests;
-    }
-
-    if (auto const maxReadRequests = config_.maybeValue<uint32_t>("max_read_requests_outstanding")) {
-        settings.maxReadRequestsOutstanding = *maxReadRequests;
-    }
-
-    if (auto const coreConnections = config_.maybeValue<uint32_t>("core_connections_per_host")) {
-        settings.coreConnectionsPerHost = *coreConnections;
-    }
-
-    if (auto const batchSize = config_.maybeValue<uint32_t>("write_batch_size")) {
-        settings.writeBatchSize = *batchSize;
-    }
+    settings.threads = config_.get<uint32_t>("threads");
+    settings.maxWriteRequestsOutstanding = config_.get<uint32_t>("max_write_requests_outstanding");
+    settings.maxReadRequestsOutstanding = config_.get<uint32_t>("max_read_requests_outstanding");
+    settings.coreConnectionsPerHost = config_.get<uint32_t>("core_connections_per_host");
+    settings.writeBatchSize = config_.get<uint32_t>("write_batch_size");
 
     if (auto const queueSize = config_.maybeValue<uint32_t>("queue_size_io")) {
         settings.queueSizeIO = *queueSize;
@@ -97,11 +78,6 @@ SettingsProvider::parseSettings() const
 
     if (auto const password = config_.maybeValue<std::string>("password")) {
         settings.password = *password;
-    }
-
-    // Parse logging settings
-    if (auto const enableLog = config_.maybeValue<bool>("enable_log")) {
-        settings.enableLog = *enableLog;
     }
 
     return settings;

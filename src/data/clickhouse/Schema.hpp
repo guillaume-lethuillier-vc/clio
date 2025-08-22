@@ -7,13 +7,14 @@
     purpose with or without fee is hereby granted, provided that the above
     copyright notice and this permission notice appear in all copies.
 
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    THE  SOFTWARE  IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
     WITH  REGARD  TO  THIS  SOFTWARE INCLUDING  ALL  IMPLIED  WARRANTIES  OF
     MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL,  DIRECT,  INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+    ANY  SPECIAL,  DIRECT,  INDIRECT,  OR  CONSEQUENTIAL  DAMAGES  OR  ANY
+    DAMAGES  WHATSOEVER  RESULTING  FROM  LOSS  OF  USE,  DATA  OR  PROFITS,
+    WHETHER  IN  AN  ACTION  OF  CONTRACT,  NEGLIGENCE  OR  OTHER  TORTIOUS
+    ACTION,  ARISING  OUT  OF  OR  IN  CONNECTION  WITH  THE  USE  OR
+    PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
@@ -54,7 +55,6 @@ template <typename SettingsProviderType>
 template <typename SettingsProviderType>
 class Schema {
     util::Logger log_{"ClickHouse"};
-    std::reference_wrapper<SettingsProviderType const> settingsProvider_;
 
 public:
     /**
@@ -66,195 +66,193 @@ public:
     {
     }
 
-    std::string createDatabase = [this]() {
+    /**
+     * @brief Get the CREATE DATABASE statement
+     */
+    [[nodiscard]] std::string getCreateDatabase() const {
         return fmt::format(
             "CREATE DATABASE IF NOT EXISTS {}",
             settingsProvider_.get().getDatabase()
         );
-    }();
+    }
 
-    // =======================
-    // Schema creation queries
-    // =======================
+    /**
+     * @brief Get the schema creation statements
+     * 
+     * NOTE(NODE-2688): based on Cassandra: src/data/cassandra/Schema.hpp
+     */
+    [[nodiscard]] std::vector<std::string> getCreateSchema() const {
+        auto statements = std::vector<std::string>{
+            // Ledgers table
+            fmt::format(
+                R"(
+                CREATE TABLE IF NOT EXISTS {} (
+                    sequence UInt32,
+                    hash String,
+                    parent_hash String,
+                    close_time UInt32,
+                    parent_close_time UInt32,
+                    close_time_resolution UInt8,
+                    close_flags UInt8,
+                    ledger_hash String,
+                    parent_close_time_resolution UInt8,
+                    parent_ledger_hash String,
+                    total_coins String,
+                    parent_total_coins String,
+                    fee_denominator UInt32,
+                    parent_fee_denominator UInt32,
+                    base_fee UInt32,
+                    parent_base_fee UInt32,
+                    reserve_base UInt32,
+                    parent_reserve_base UInt32,
+                    reserve_inc UInt32,
+                    parent_reserve_inc UInt32,
+                    blob String
+                ) ENGINE = MergeTree()
+                ORDER BY sequence
+                )",
+                qualifiedTableName(settingsProvider_.get(), "ledgers")
+            ),
 
-    std::vector<std::string> createSchema = {
-        // Ledgers table
-        fmt::format(
-            R"(
-            CREATE TABLE IF NOT EXISTS {} (
-                sequence UInt32,
-                hash String,
-                parent_hash String,
-                close_time UInt32,
-                parent_close_time UInt32,
-                close_time_resolution UInt8,
-                close_flags UInt8,
-                ledger_hash String,
-                parent_close_time_resolution UInt8,
-                parent_ledger_hash String,
-                total_coins String,
-                parent_total_coins String,
-                fee_denominator UInt32,
-                parent_fee_denominator UInt32,
-                base_fee UInt32,
-                parent_base_fee UInt32,
-                reserve_base UInt32,
-                parent_reserve_base UInt32,
-                reserve_inc UInt32,
-                parent_reserve_inc UInt32,
-                blob String,
-                PRIMARY KEY (sequence)
-            ) ENGINE = MergeTree()
-            ORDER BY sequence
-            )",
-            qualifiedTableName(settingsProvider_.get(), "ledgers")
-        ),
+            // Ledger objects table
+            fmt::format(
+                R"(
+                CREATE TABLE IF NOT EXISTS {} (
+                    key String,
+                    seq UInt32,
+                    blob String
+                ) ENGINE = MergeTree()
+                ORDER BY (key, seq)
+                )",
+                qualifiedTableName(settingsProvider_.get(), "ledger_objects")
+            ),
 
-        // Ledger objects table
-        fmt::format(
-            R"(
-            CREATE TABLE IF NOT EXISTS {} (
-                key String,
-                seq UInt32,
-                blob String,
-                PRIMARY KEY (key, seq)
-            ) ENGINE = MergeTree()
-            ORDER BY (key, seq)
-            )",
-            qualifiedTableName(settingsProvider_.get(), "ledger_objects")
-        ),
+            // Transactions table
+            fmt::format(
+                R"(
+                CREATE TABLE IF NOT EXISTS {} (
+                    hash String,
+                    seq UInt32,
+                    date UInt32,
+                    transaction String,
+                    metadata String
+                ) ENGINE = MergeTree()
+                ORDER BY (hash, seq)
+                )",
+                qualifiedTableName(settingsProvider_.get(), "transactions")
+            ),
 
-        // Transactions table
-        fmt::format(
-            R"(
-            CREATE TABLE IF NOT EXISTS {} (
-                hash String,
-                seq UInt32,
-                date UInt32,
-                transaction String,
-                metadata String,
-                PRIMARY KEY (hash, seq)
-            ) ENGINE = MergeTree()
-            ORDER BY (hash, seq)
-            )",
-            qualifiedTableName(settingsProvider_.get(), "transactions")
-        ),
+            // Account transactions table
+            fmt::format(
+                R"(
+                CREATE TABLE IF NOT EXISTS {} (
+                    account String,
+                    seq UInt32,
+                    hash String,
+                    date UInt32,
+                    ledger_sequence UInt32
+                ) ENGINE = MergeTree()
+                ORDER BY (account, seq, hash)
+                )",
+                qualifiedTableName(settingsProvider_.get(), "account_transactions")
+            ),
 
-        // Account transactions table
-        fmt::format(
-            R"(
-            CREATE TABLE IF NOT EXISTS {} (
-                account String,
-                seq UInt32,
-                hash String,
-                date UInt32,
-                ledger_sequence UInt32,
-                PRIMARY KEY (account, seq, hash)
-            ) ENGINE = MergeTree()
-            ORDER BY (account, seq, hash)
-            )",
-            qualifiedTableName(settingsProvider_.get(), "account_transactions")
-        ),
+            // NFTs table
+            fmt::format(
+                R"(
+                CREATE TABLE IF NOT EXISTS {} (
+                    token_id String,
+                    seq UInt32,
+                    owner String,
+                    is_burned UInt8,
+                    uri String,
+                    flags UInt32,
+                    transfer_fee UInt32,
+                    issuer String,
+                    taxon UInt32,
+                    blob String
+                ) ENGINE = MergeTree()
+                ORDER BY (token_id, seq)
+                )",
+                qualifiedTableName(settingsProvider_.get(), "nfts")
+            ),
 
-        // NFTs table
-        fmt::format(
-            R"(
-            CREATE TABLE IF NOT EXISTS {} (
-                token_id String,
-                seq UInt32,
-                owner String,
-                is_burned UInt8,
-                uri String,
-                flags UInt32,
-                transfer_fee UInt32,
-                issuer String,
-                taxon UInt32,
-                blob String,
-                PRIMARY KEY (token_id, seq)
-            ) ENGINE = MergeTree()
-            ORDER BY (token_id, seq)
-            )",
-            qualifiedTableName(settingsProvider_.get(), "nfts")
-        ),
+            // NFT transactions table
+            fmt::format(
+                R"(
+                CREATE TABLE IF NOT EXISTS {} (
+                    token_id String,
+                    seq UInt32,
+                    hash String,
+                    date UInt32,
+                    ledger_sequence UInt32
+                ) ENGINE = MergeTree()
+                ORDER BY (token_id, seq, hash)
+                )",
+                qualifiedTableName(settingsProvider_.get(), "nft_transactions")
+            ),
 
-        // NFT transactions table
-        fmt::format(
-            R"(
-            CREATE TABLE IF NOT EXISTS {} (
-                token_id String,
-                seq UInt32,
-                hash String,
-                date UInt32,
-                ledger_sequence UInt32,
-                PRIMARY KEY (token_id, seq, hash)
-            ) ENGINE = MergeTree()
-            ORDER BY (token_id, seq, hash)
-            )",
-            qualifiedTableName(settingsProvider_.get(), "nft_transactions")
-        ),
+            // MPT holders table
+            fmt::format(
+                R"(
+                CREATE TABLE IF NOT EXISTS {} (
+                    mpt_id String,
+                    account String,
+                    seq UInt32,
+                    balance String
+                ) ENGINE = MergeTree()
+                ORDER BY (mpt_id, account, seq)
+                )",
+                qualifiedTableName(settingsProvider_.get(), "mpt_holders")
+            ),
 
-        // MPT holders table
-        fmt::format(
-            R"(
-            CREATE TABLE IF NOT EXISTS {} (
-                mpt_id String,
-                account String,
-                seq UInt32,
-                balance String,
-                PRIMARY KEY (mpt_id, account, seq)
-            ) ENGINE = MergeTree()
-            ORDER BY (mpt_id, account, seq)
-            )",
-            qualifiedTableName(settingsProvider_.get(), "mpt_holders")
-        ),
+            // Successors table
+            fmt::format(
+                R"(
+                CREATE TABLE IF NOT EXISTS {} (
+                    key String,
+                    seq UInt32,
+                    successor String
+                ) ENGINE = MergeTree()
+                ORDER BY (key, seq)
+                )",
+                qualifiedTableName(settingsProvider_.get(), "successors")
+            ),
 
-        // Successors table
-        fmt::format(
-            R"(
-            CREATE TABLE IF NOT EXISTS {} (
-                key String,
-                seq UInt32,
-                successor String,
-                PRIMARY KEY (key, seq)
-            ) ENGINE = MergeTree()
-            ORDER BY (key, seq)
-            )",
-            qualifiedTableName(settingsProvider_.get(), "successors")
-        ),
+            // Node messages table
+            fmt::format(
+                R"(
+                CREATE TABLE IF NOT EXISTS {} (
+                    uuid String,
+                    message String,
+                    timestamp DateTime DEFAULT now()
+                ) ENGINE = MergeTree()
+                ORDER BY (uuid, timestamp)
+                )",
+                qualifiedTableName(settingsProvider_.get(), "node_messages")
+            ),
 
-        // Node messages table
-        fmt::format(
-            R"(
-            CREATE TABLE IF NOT EXISTS {} (
-                uuid String,
-                message String,
-                timestamp DateTime DEFAULT now(),
-                PRIMARY KEY (uuid, timestamp)
-            ) ENGINE = MergeTree()
-            ORDER BY (uuid, timestamp)
-            )",
-            qualifiedTableName(settingsProvider_.get(), "node_messages")
-        ),
-
-        // Migrator status table
-        fmt::format(
-            R"(
-            CREATE TABLE IF NOT EXISTS {} (
-                migrator_name String,
-                status String,
-                timestamp DateTime DEFAULT now(),
-                PRIMARY KEY (migrator_name)
-            ) ENGINE = MergeTree()
-            ORDER BY migrator_name
-            )",
-            qualifiedTableName(settingsProvider_.get(), "migrator_status")
-        )
-    };
+            // Migrator status table
+            fmt::format(
+                R"(
+                CREATE TABLE IF NOT EXISTS {} (
+                    migrator_name String,
+                    status String,
+                    timestamp DateTime DEFAULT now()
+                ) ENGINE = MergeTree()
+                ORDER BY migrator_name
+                )",
+                qualifiedTableName(settingsProvider_.get(), "migrator_status")
+            )
+        };
+        
+        return statements;
+    }
 
     /**
      * @brief Prepare all statements for the schema.
      *
-     * @param connection The connection to prepare statements on
+     * @param handle The ClickHouse handle to prepare statements on
      */
     void
     prepareStatements(Handle& /*handle*/)
@@ -263,6 +261,9 @@ public:
         // (this method exists for API compatibility with the Cassandra backend)
         LOG(log_.info()) << "ClickHouse schema ready (no statement preparation needed)";
     }
+
+private:
+    std::reference_wrapper<SettingsProviderType const> settingsProvider_;
 };
 
 }  // namespace data::clickhouse

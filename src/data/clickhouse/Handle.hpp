@@ -111,6 +111,13 @@ public:
     execute(std::string const& query) const;
 
     /**
+     * @param query The query to execute (synchronous version)
+     * @return Possibly an error
+     */
+    [[nodiscard]] MaybeErrorType
+    executeSync(std::string const& query) const;
+
+    /**
      * @brief Execute a batch of queries.
      *
      * @param batch The batch to execute
@@ -118,6 +125,15 @@ public:
      */
     [[nodiscard]] MaybeErrorType
     executeEach(std::vector<std::string> const& queries) const;
+
+    /**
+     * @brief Execute a batch of queries (synchronous version).
+     *
+     * @param batch The batch to execute
+     * @return Possibly an error
+     */
+    [[nodiscard]] MaybeErrorType
+    executeEachSync(std::vector<std::string> const& queries) const;
 
     /**
      * @brief Execute a query and return results asynchronously.

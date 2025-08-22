@@ -30,34 +30,57 @@ Session::Session(const Settings& settings)
     : settings_(settings), lastError_(""), valid_(true) {
 }
 
-std::string Session::buildRequestParams(const std::string& sql, bool /*isQuery*/) const {
+std::string Session::buildRequestParams(const std::string& sql, bool isQuery) const {
     std::ostringstream oss;
     
-    oss << "query=" << sql;
-    
-    // db parameter (if specified)
-    if (!settings_.connectionInfo.database.empty()) {
-        oss << "&database=" << settings_.connectionInfo.database;
+    // NOTE(NODE-2688): for CREATE, DROP, ALTER, etc. statements, send SQL directly in POST body
+    // For SELECT queries, use query= parameter
+    if (isQuery) {
+        oss << "query=" << sql;
+    } else {
+        // other statement: send SQL directly
+        oss << sql;
     }
-    
-    // authentication
-    if (!settings_.getUsername().empty()) {
-        oss << "&user=" << settings_.getUsername();
-    }
-    if (!settings_.getPassword().empty()) {
-        oss << "&password=" << settings_.getPassword();
-    }
-    
-    oss << "&default_format=JSONEachRow";
     
     return oss.str();
 }
 
 util::requests::RequestBuilder Session::createRequestBuilder() const {
-    return util::requests::RequestBuilder(
+    auto builder = util::requests::RequestBuilder(
         settings_.connectionInfo.host, 
         std::to_string(settings_.connectionInfo.port)
     );
+    
+    // build URL with authentication and database parameters
+    std::ostringstream urlParams;
+    bool hasParams = false;
+    
+    // db parameter (if specified)
+    if (!settings_.connectionInfo.database.empty()) {
+        if (hasParams) urlParams << "&";
+        urlParams << "database=" << settings_.connectionInfo.database;
+        hasParams = true;
+    }
+    
+    // authentication
+    if (!settings_.getUsername().empty()) {
+        if (hasParams) urlParams << "&";
+        urlParams << "user=" << settings_.getUsername();
+        hasParams = true;
+    }
+    if (!settings_.getPassword().empty()) {
+        if (hasParams) urlParams << "&";
+        urlParams << "password=" << settings_.getPassword();
+        hasParams = true;
+    }
+    
+    if (hasParams) {
+        builder.setTarget("/?" + urlParams.str());
+    } else {
+        builder.setTarget("/");
+    }
+    
+    return builder;
 }
 
 Result Session::parseResponse(const std::string& response) const {
@@ -167,11 +190,26 @@ bool Session::execute(const std::string& sql, boost::asio::yield_context yield) 
     
     try {
         auto builder = createRequestBuilder();
-        builder.setTarget("/")
-               .addData(buildRequestParams(sql, false));
+        auto params = buildRequestParams(sql, false);  // SQL only, no auth params
+        
+        builder.addData(params);
         
         auto response = builder.postPlain(yield);
-        return response.has_value();
+        if (!response.has_value()) {
+            lastError_ = "HTTP request failed";
+            return false;
+        }
+
+        // check if ClickHouse returned an error
+        std::string responseStr = *response;
+        if (responseStr.find("Code:") != std::string::npos && 
+            (responseStr.find("Exception") != std::string::npos || 
+             responseStr.find("Error") != std::string::npos)) {
+            lastError_ = "ClickHouse error: " + responseStr;
+            return false;
+        }
+        
+        return true;
         
     } catch (const std::exception& e) {
         lastError_ = "Execute failed: " + std::string(e.what());
